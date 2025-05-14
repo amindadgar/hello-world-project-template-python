@@ -13,6 +13,8 @@ FROM base as worker
 # Command to run the worker
 CMD ["python", "run_worker.py"] 
 
+# We don't have the concept of server here
+# But this is just for testing the workflow
 FROM base as server
 # Command to run the server
-CMD ["python", "run_server.py"] 
+CMD ["python", "run_workflow.py"]
