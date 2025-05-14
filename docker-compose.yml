@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   worker:
-    build: .
+    build:
+      context: .
+      target: worker
     env_file:
       - .env
     environment:
@@ -18,6 +20,30 @@ services:
     restart: unless-stopped 
     networks:
       - dokploy-network
+    profiles:
+      - worker
+
+  server:
+    build:
+      context: .
+      target: server
+    env_file:
+      - .env
+    environment:
+      - TEMPORAL_HOST=${TEMPORAL_HOST}
+      - TEMPORAL_NAMESPACE=${TEMPORAL_NAMESPACE}
+      - TEMPORAL_TASK_QUEUE=${TEMPORAL_TASK_QUEUE}
+      # Uncomment these if using TLS
+      # - TEMPORAL_TLS_CERT=${TEMPORAL_TLS_CERT}
+      # - TEMPORAL_TLS_KEY=${TEMPORAL_TLS_KEY}
+      # - TEMPORAL_TLS_CA=${TEMPORAL_TLS_CA}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # This enables host.docker.internal to work on Linux
+    restart: unless-stopped 
+    networks:
+      - dokploy-network
+    profiles:
+      - server
 
 networks:
   dokploy-network:
