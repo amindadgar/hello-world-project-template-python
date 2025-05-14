@@ -13,7 +13,7 @@ async def main():
     client = await Client.connect(
         TEMPORAL_HOST,
         namespace=TEMPORAL_NAMESPACE,
-        tls=TLS_CONFIG
+        tls=TLS_CONFIG if TLS_CONFIG else False,
     )
     # Run the worker
     worker = Worker(
