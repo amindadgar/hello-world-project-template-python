@@ -20,8 +20,6 @@ services:
     restart: unless-stopped 
     networks:
       - dokploy-network
-    profiles:
-      - worker
 
   server:
     build:
@@ -42,8 +40,6 @@ services:
     restart: unless-stopped 
     networks:
       - dokploy-network
-    profiles:
-      - server
 
 networks:
   dokploy-network:
