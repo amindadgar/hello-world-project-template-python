@@ -15,8 +15,6 @@ services:
       # - TEMPORAL_TLS_CERT=${TEMPORAL_TLS_CERT}
       # - TEMPORAL_TLS_KEY=${TEMPORAL_TLS_KEY}
       # - TEMPORAL_TLS_CA=${TEMPORAL_TLS_CA}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"  # This enables host.docker.internal to work on Linux
     restart: unless-stopped 
     networks:
       - dokploy-network
@@ -35,9 +33,6 @@ services:
       # - TEMPORAL_TLS_CERT=${TEMPORAL_TLS_CERT}
       # - TEMPORAL_TLS_KEY=${TEMPORAL_TLS_KEY}
       # - TEMPORAL_TLS_CA=${TEMPORAL_TLS_CA}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"  # This enables host.docker.internal to work on Linux
-    restart: unless-stopped 
     networks:
       - dokploy-network
 
