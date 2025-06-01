@@ -1,6 +1,60 @@
 version: '3.8'
 
 services:
+  # Temporal Server
+  temporal:
+    image: temporalio/auto-setup:1.22.0
+    ports:
+      - "7233:7233"    # Temporal gRPC endpoint
+      - "8080:8080"    # Temporal Web UI
+    environment:
+      - DB=postgresql
+      - DB_PORT=5432
+      - POSTGRES_USER=temporal
+      - POSTGRES_PWD=temporal
+      - POSTGRES_SEEDS=postgresql
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
+    depends_on:
+      - postgresql
+    volumes:
+      - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+    labels:
+      - "temporal.service=server"
+    networks:
+      - ai-agent-network
+
+  # PostgreSQL for Temporal
+  postgresql:
+    image: postgres:13
+    environment:
+      POSTGRES_PASSWORD: temporal
+      POSTGRES_USER: temporal
+      POSTGRES_DB: temporal
+    volumes:
+      - temporal-postgresql:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - ai-agent-network
+
+  # MongoDB for AI Agent data
+  mongodb:
+    image: mongo:6.0
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: ai_agent_db
+    volumes:
+      - mongodb-data:/data/db
+      - ./mongodb-init:/docker-entrypoint-initdb.d
+    labels:
+      - "ai-agent.service=database"
+    networks:
+      - ai-agent-network
+
+  # Temporal Worker (AI Agent)
   worker:
     build:
       context: .
@@ -8,10 +62,10 @@ services:
     env_file:
       - .env
     environment:
-      - TEMPORAL_HOST=${TEMPORAL_HOST}
+      - TEMPORAL_HOST=temporal:7233
       - TEMPORAL_NAMESPACE=${TEMPORAL_NAMESPACE}
       - TEMPORAL_TASK_QUEUE=${TEMPORAL_TASK_QUEUE}
-      - MONGODB_URI=${MONGODB_URI}
+      - MONGODB_URI=mongodb://admin:password@mongodb:27017/ai_agent_db?authSource=admin
       - MONGODB_DATABASE=${MONGODB_DATABASE}
       - MONGODB_COLLECTION=${MONGODB_COLLECTION}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -21,37 +75,66 @@ services:
       - LLM_RETRY_ATTEMPTS=${LLM_RETRY_ATTEMPTS}
       - LLM_RETRY_BACKOFF=${LLM_RETRY_BACKOFF}
       - LOG_LEVEL=${LOG_LEVEL}
+    depends_on:
+      - temporal
+      - mongodb
     volumes:
       - .:/app
     working_dir: /app
     labels:
       - "ai-agent.service=worker"
     networks:
-      - dokploy-network
+      - ai-agent-network
 
+  # Streamlit Dashboard
   dashboard:
-    build: .
+    build:
+      context: .
     command: streamlit run streamlit_app.py --server.address ${STREAMLIT_HOST} --server.port ${STREAMLIT_PORT}
     env_file:
       - .env
     ports:
-      - ${STREAMLIT_PORT}:${STREAMLIT_PORT}
+      - "${STREAMLIT_PORT}:${STREAMLIT_PORT}"
     environment:
-      - MONGODB_URI=${MONGODB_URI}
+      - MONGODB_URI=mongodb://admin:password@mongodb:27017/ai_agent_db?authSource=admin
       - MONGODB_DATABASE=${MONGODB_DATABASE}
       - MONGODB_COLLECTION=${MONGODB_COLLECTION}
       - STREAMLIT_PASSWORD=${STREAMLIT_PASSWORD}
       - STREAMLIT_HOST=${STREAMLIT_HOST}
       - STREAMLIT_PORT=${STREAMLIT_PORT}
       - LOG_LEVEL=${LOG_LEVEL}
+    depends_on:
+      - mongodb
     volumes:
       - .:/app
     working_dir: /app
     labels:
       - "ai-agent.service=dashboard"
     networks:
-      - dokploy-network
+      - ai-agent-network
+
+  # MongoDB Express (Web UI for MongoDB)
+  mongo-express:
+    image: mongo-express:1.0.0-alpha
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password
+      ME_CONFIG_MONGODB_URL: mongodb://admin:password@mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: password
+    depends_on:
+      - mongodb
+    labels:
+      - "ai-agent.service=mongo-ui"
+    networks:
+      - ai-agent-network
+
+volumes:
+  temporal-postgresql:
+  mongodb-data:
 
 networks:
-  dokploy-network:
-    external: true
+  ai-agent-network:
+    driver: bridge

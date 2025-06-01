@@ -1,0 +1,41 @@
+# Temporal Server Dynamic Configuration for Development
+# This file contains configuration options that can be changed without restarting the server
+
+# Enable advanced visibility features
+system.advancedVisibilityConfigExist:
+  - value: true
+
+# Worker configuration
+worker.buildIdScavengerEnabled:
+  - value: true
+
+# History configuration  
+history.maxAutoResetPoints:
+  - value: 20
+
+# Frontend configuration
+frontend.enableUpdateWorkflowExecution:
+  - value: true
+
+frontend.enableUpdateWorkflowExecutionAsyncAccepted:
+  - value: true
+
+# Matching configuration
+matching.enableTaskMergingByBuildId:
+  - value: true
+
+# System configuration for development
+system.enableEagerNamespaceRefresher:
+  - value: true
+
+# Visibility configuration
+visibility.enableReadFromClosedExecutionV2:
+  - value: true
+
+# Worker configuration for better development experience
+worker.enableLoggingInReplay:
+  - value: true
+
+# Enable debugging features for development
+frontend.enableRawHistoryQuery:
+  - value: true 

@@ -55,8 +55,8 @@ def load_requests_data(status_filter: Optional[List[str]] = None,
             search_text=search_text
         )
         
-        # Convert to dict for JSON serialization
-        return [request.dict() for request in requests]
+        # Convert to dict for JSON serialization - use model_dump for Pydantic v2
+        return [request.model_dump() for request in requests]
     except Exception as e:
         st.error(f"Failed to load data: {e}")
         return []

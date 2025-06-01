@@ -77,7 +77,8 @@ class DatabaseManager:
                 status="PENDING"
             )
             
-            result = self.collection.insert_one(document.dict(by_alias=True, exclude={"id"}))
+            # Use model_dump instead of dict() for Pydantic v2
+            result = self.collection.insert_one(document.model_dump(by_alias=True, exclude={"id"}))
             logger.info(f"Created request document: {request_data.request_id}")
             return str(result.inserted_id)
             
@@ -94,8 +95,8 @@ class DatabaseManager:
         Returns True if update was successful
         """
         try:
-            # Filter out None values
-            update_dict = {k: v for k, v in update_data.dict().items() if v is not None}
+            # Filter out None values - use model_dump for Pydantic v2
+            update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
             
             if not update_dict:
                 return True
