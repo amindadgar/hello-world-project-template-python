@@ -11,28 +11,44 @@ services:
       - TEMPORAL_HOST=${TEMPORAL_HOST}
       - TEMPORAL_NAMESPACE=${TEMPORAL_NAMESPACE}
       - TEMPORAL_TASK_QUEUE=${TEMPORAL_TASK_QUEUE}
-      # Uncomment these if using TLS
-      # - TEMPORAL_TLS_CERT=${TEMPORAL_TLS_CERT}
-      # - TEMPORAL_TLS_KEY=${TEMPORAL_TLS_KEY}
-      # - TEMPORAL_TLS_CA=${TEMPORAL_TLS_CA}
-    restart: unless-stopped 
+      - MONGODB_URI=${MONGODB_URI}
+      - MONGODB_DATABASE=${MONGODB_DATABASE}
+      - MONGODB_COLLECTION=${MONGODB_COLLECTION}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL}
+      - AUTHORIZED_USER_ID=${AUTHORIZED_USER_ID}
+      - SENTIMENT_API_ENABLED=${SENTIMENT_API_ENABLED}
+      - LLM_RETRY_ATTEMPTS=${LLM_RETRY_ATTEMPTS}
+      - LLM_RETRY_BACKOFF=${LLM_RETRY_BACKOFF}
+      - LOG_LEVEL=${LOG_LEVEL}
+    volumes:
+      - .:/app
+    working_dir: /app
+    labels:
+      - "ai-agent.service=worker"
     networks:
       - dokploy-network
 
-  server:
-    build:
-      context: .
-      target: server
+  dashboard:
+    build: .
+    command: streamlit run streamlit_app.py --server.address ${STREAMLIT_HOST} --server.port ${STREAMLIT_PORT}
     env_file:
       - .env
+    ports:
+      - ${STREAMLIT_PORT}:${STREAMLIT_PORT}
     environment:
-      - TEMPORAL_HOST=${TEMPORAL_HOST}
-      - TEMPORAL_NAMESPACE=${TEMPORAL_NAMESPACE}
-      - TEMPORAL_TASK_QUEUE=${TEMPORAL_TASK_QUEUE}
-      # Uncomment these if using TLS
-      # - TEMPORAL_TLS_CERT=${TEMPORAL_TLS_CERT}
-      # - TEMPORAL_TLS_KEY=${TEMPORAL_TLS_KEY}
-      # - TEMPORAL_TLS_CA=${TEMPORAL_TLS_CA}
+      - MONGODB_URI=${MONGODB_URI}
+      - MONGODB_DATABASE=${MONGODB_DATABASE}
+      - MONGODB_COLLECTION=${MONGODB_COLLECTION}
+      - STREAMLIT_PASSWORD=${STREAMLIT_PASSWORD}
+      - STREAMLIT_HOST=${STREAMLIT_HOST}
+      - STREAMLIT_PORT=${STREAMLIT_PORT}
+      - LOG_LEVEL=${LOG_LEVEL}
+    volumes:
+      - .:/app
+    working_dir: /app
+    labels:
+      - "ai-agent.service=dashboard"
     networks:
       - dokploy-network
 

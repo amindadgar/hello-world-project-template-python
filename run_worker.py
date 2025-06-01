@@ -1,32 +1,64 @@
 # @@@SNIPSTART python-project-template-run-worker
-import logging
 import asyncio
-
-from temporalio import activity, workflow
+import logging
 from temporalio.client import Client
 from temporalio.worker import Worker
+import config
 
-from activities import say_hello
-from workflows import SayHello
-from config import TEMPORAL_HOST, TEMPORAL_NAMESPACE, TASK_QUEUE, TLS_CONFIG
+# Import workflows and activities
+from workflows import HandleTelegramQuery, SayHello
+from activities import (
+    log_initial_request,
+    invoke_llm,
+    update_request_with_result,
+    analyze_sentiment,
+    handle_failure,
+    say_hello
+)
 
-logging.basicConfig(level=logging.INFO)
+# Set up logging
+logging.basicConfig(level=getattr(logging, config.LOG_LEVEL))
+logger = logging.getLogger(__name__)
 
 async def main():
+    """Main worker function"""
+    
+    # Connect to Temporal server
+    tls_config = config.TLS_CONFIG if config.TLS_CONFIG else False
+    
     client = await Client.connect(
-        TEMPORAL_HOST,
-        namespace=TEMPORAL_NAMESPACE,
-        tls=TLS_CONFIG if TLS_CONFIG else False,
+        config.TEMPORAL_HOST,
+        namespace=config.TEMPORAL_NAMESPACE,
+        tls=tls_config
     )
-
-    logging.info(f"Connected to Temporal server at {TEMPORAL_HOST}")
-
-    # Run the worker
+    
+    logger.info(f"Connected to Temporal server: {config.TEMPORAL_HOST}")
+    logger.info(f"Namespace: {config.TEMPORAL_NAMESPACE}")
+    logger.info(f"Task queue: {config.TASK_QUEUE}")
+    
+    # Create worker with workflows and activities
     worker = Worker(
-        client, task_queue=TASK_QUEUE, workflows=[SayHello], activities=[say_hello]
+        client,
+        task_queue=config.TASK_QUEUE,
+        workflows=[
+            HandleTelegramQuery,  # Main AI agent workflow
+            SayHello             # Legacy workflow for testing
+        ],
+        activities=[
+            log_initial_request,
+            invoke_llm,
+            update_request_with_result,
+            analyze_sentiment,
+            handle_failure,
+            say_hello            # Legacy activity for testing
+        ],
     )
+    
+    logger.info("Worker registered with workflows and activities")
+    logger.info("Starting worker...")
+    
+    # Run the worker
     await worker.run()
-
 
 if __name__ == "__main__":
     asyncio.run(main())
